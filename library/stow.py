@@ -17,7 +17,6 @@ IGNORE_STRING="freckle"
 
 POTENTIAL_STOW_PATHS = [
     os.path.expanduser("~/.local/opt/conda/bin"),
-    os.path.expanduser("~/.inaugurate/opt/conda/bin"),
     os.path.expanduser("~/.local/bin"),
     os.path.expanduser("~/.freckles/opt/conda/bin"),
     os.path.expanduser("~/miniconda3/bin"),

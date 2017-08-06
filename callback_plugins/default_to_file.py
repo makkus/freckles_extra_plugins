@@ -24,17 +24,20 @@ class FileWriter(Display):
         Note: msg *must* be a unicode string to prevent UnicodeError tracebacks.
         """
 
-        msg2 = msg.lstrip(u'\n')
+        try:
+            msg2 = msg.lstrip(u'\n')
 
-        msg2 = to_bytes(msg2)
+            msg2 = to_bytes(msg2)
 
-        # We first convert to a byte string so that we get rid of
-        # characters that are invalid in the user's locale
-        msg2 = to_text(msg2, self._output_encoding(stderr=stderr))
+            # We first convert to a byte string so that we get rid of
+            # characters that are invalid in the user's locale
+            msg2 = to_text(msg2, self._output_encoding(stderr=stderr))
 
-        #print(msg2, file=self.log_file)
-        with open(self.log_file, "ab+") as fd:
-            fd.write("{}\n".format(msg))
+            #print(msg2, file=self.log_file)
+            with open(self.log_file, "ab+") as fd:
+                fd.write("{}\n".format(msg))
+        except:
+            pass
 
 
 class CallbackModule(CallbackModule_default):  # pylint: disable=too-few-public-methods,no-init
