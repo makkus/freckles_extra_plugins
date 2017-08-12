@@ -9,6 +9,7 @@ OTHER_PATHS_TO_CHECK = [
     os.path.expanduser("~/.local/bin")
 ]
 
+
 def which(program):
     def is_exe(fpath):
         return os.path.isfile(fpath) and os.access(fpath, os.X_OK)
@@ -32,6 +33,7 @@ def which(program):
 
     return None
 
+
 def missing_from_path(module, exe):
 
         exe_missing = which(exe) is None
@@ -49,10 +51,11 @@ def missing_from_path(module, exe):
             except:
                 return True
 
+
 def main():
     module = AnsibleModule(
-        argument_spec = dict(
-            executables_to_check = dict(required=True, type='list')
+        argument_spec=dict(
+            executables_to_check=dict(required=True, type='list')
         ),
         supports_check_mode=False
     )
