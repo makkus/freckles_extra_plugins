@@ -62,11 +62,11 @@ class ActionModule(ActionBase):
               "key_move_map": {'*': "vars"}}
         chain = [frkl.FrklProcessor(format)]
 
-        frkl_obj = frkl.Frkl(self._task.args["packages"], chain)
+        frkl_obj = frkl.Frkl(self._task.args.get("packages", []), chain)
 
         package = frkl_obj.process()
         if len(package) == 0:
-            raise Exception("No packages provided for package: {}".format(self._task.args["packages"]))
+            raise Exception("No packages provided for package: {}".format(self._task.args))
         if len(package) != 1:
             raise Exception("For some reason more than one package provided, this shouldn't happen: {}".format(package))
 
