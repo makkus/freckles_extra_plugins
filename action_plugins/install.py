@@ -25,24 +25,213 @@ except ImportError:
     from ansible.utils.display import Display
     display = Display()
 
-
 boolean = C.mk_boolean
 
 IGNORE_KEY = "IGNORE_THIS_KEY"
 VARS_KEY = "vars"
 
-PKG_MGR_VARS = {
-    'apt': ["name", "state", "allow_unauthenticated", "autoclean", "autoremove", "cache_valid_time", "deb", "default_release", "dpkg_options", "force", "install_recommends", "only_upgrades", "purge", "update_cache", "upgrade"],
-    'yum': ["name", "state", "conf_file", "disable_gpg_check", "disablerepo", "enablerepo", "exclude", "installroot", "skip_broken", "update_cache", "validate_certs"],
-    'nix': ["name", "state"],
-    'git': ["accept_hostkey", "archive", "bare", "clone", "depth", "dest", "executable", "force", "key_file", "recursive", "reference", "refspec", "repo", "ssh_opts", "track_submodules", "umask", "update", "verify_commit", "version"],
-    'pip': ["chdir", "editable", "executable", "extra_args", "name", "requirements", "state", "umask", "version", "virtualenv", "virtualenv_command", "virtualenv_python", "virtualenv_site_packages"],
-    'conda': ['conda_environment', 'upgrade', 'conda_channels', 'state', 'name'],
-    'vagrant_plugin': ['name', 'update', 'plugin_source', 'version']
+
+class BasePkgMgr(object):
+
+    def __init__(self):
+        pass
+
+    def get_name(self):
+        return "generic"
+
+    def prepare(self, package_vars, calculated_package, task_vars, result):
+        """Returns all vars the package needs."""
+
+        result = {}
+        if calculated_package:
+            if not isinstance(calculated_package, (list, tuple)):
+                calculated_package = [calculated_package]
+            for pkg in calculated_package:
+                result[pkg] = {"name": pkg}
+        else:
+            temp = package_vars["name"]
+            result[temp] = {"name": temp}
+
+        return result
+
+    def get_supported_vars(self):
+        """Returns all vars that are supported by this pkg mgr module and should be forwarded.
+
+        Returns None if unknown, in which case all direct descendents of the install task in question are forwarded.
+        """
+
+        return None
+
+
+class GitPkgMgr(BasePkgMgr):
+
+    def __init__(self):
+        pass
+
+    def get_name(self):
+        return "git"
+
+    def prepare(self, package_vars, calculated_package, task_vars, result):
+        if calculated_package:
+            calculated_package = ensure_git_repo_format(calculated_package)
+            # we can be sure pkg_name is now a dict
+            return {calculated_package["repo"]: calculated_package}
+        else:
+            if "repo" in package_vars.keys():
+                temp = ensure_git_repo_format(package_vars["repo"], package_vars.get("dest", None))
+            else:
+                temp = ensure_git_repo_format(package_vars["name"], package_vars.get("dest", None))
+
+            return {temp["repo"]: temp}
+
+    def get_supported_vars(self):
+
+        return ["accept_hostkey", "archive", "bare", "clone", "depth", "dest", "executable", "force", "key_file", "recursive", "reference", "refspec", "repo", "ssh_opts", "track_submodules", "umask", "update", "verify_commit", "version"]
+
+
+class AptPkgMgr(BasePkgMgr):
+
+    def __init__(self):
+        pass
+
+    def get_name(self):
+        return "apt"
+
+    def prepare(self, package_vars, calculated_package, task_vars, result):
+        result = {}
+        if calculated_package:
+            if not isinstance(calculated_package, (list, tuple)):
+                calculated_package = [calculated_package]
+            for pkg in calculated_package:
+                if pkg.endswith(".deb"):
+                    result[pkg] = {"deb": pkg, "name": IGNORE_KEY, "update_cache": IGNORE_KEY, "package": IGNORE_KEY}
+                else:
+                    result[pkg] = {"name": pkg, "deb": IGNORE_KEY}
+        else:
+            temp = package_vars["name"]
+            if temp.endswith(".deb"):
+                result[temp] = {"deb": temp, "name": IGNORE_KEY, "update_cache": IGNORE_KEY, "package": IGNORE_KEY}
+            else:
+                result[temp] = {"name": temp, "deb": IGNORE_KEY}
+
+        return result
+
+    def get_supported_vars(self):
+
+        return ["name", "state", "allow_unauthenticated", "autoclean", "autoremove", "cache_valid_time", "deb", "default_release", "dpkg_options", "force", "install_recommends", "only_upgrades", "purge", "update_cache", "upgrade"]
+
+class YumPkgMgr(BasePkgMgr):
+
+    def __init__(self):
+        pass
+
+    def get_name(self):
+
+        return "yum"
+
+    def get_supported_vars(self):
+
+        return ["name", "state", "conf_file", "disable_gpg_check", "disablerepo", "enablerepo", "exclude", "installroot", "skip_broken", "update_cache", "validate_certs"]
+
+
+class NixPkgMgr(BasePkgMgr):
+
+    def __init__(self):
+        pass
+
+    def get_name(self):
+
+        return "nix"
+
+    def get_supported_vars(self):
+
+        return ["name", "state"]
+
+class PipPkgMgr(BasePkgMgr):
+
+    def __init__(self):
+        pass
+
+    def get_name(self):
+        return "pip"
+
+    def prepare(self, package_vars, calculated_package, task_vars, result):
+
+        result = {}
+        if calculated_package:
+            if not isinstance(calculated_package, (list, tuple)):
+                calculated_package = [calculated_package]
+            for pkg in calculated_package:
+                if pkg.endswith(".txt"):
+                    result[pkg] = {"requirements": pkg, "name": IGNORE_KEY}
+                else:
+                    result[pkg] = {"name": pkg, "requirements": IGNORE_KEY}
+        else:
+            temp = package_vars["name"]
+            if temp.endswith(".txt"):
+                result[temp] = {"requirements": temp, "name": IGNORE_KEY}
+            else:
+                result[temp] = {"name": temp, "requirements": IGNORE_KEY}
+
+        return result
+
+    def get_supported_vars(self):
+
+        return ["chdir", "editable", "executable", "extra_args", "name", "requirements", "state", "umask", "version", "virtualenv", "virtualenv_command", "virtualenv_python", "virtualenv_site_packages"]
+
+class CondaPkgMgr(BasePkgMgr):
+
+    def __init__(self):
+        pass
+
+    def get_name(self):
+        return "conda"
+
+    def prepare(self, package_vars, calculated_package, task_vars, result):
+
+        result = {}
+        if calculated_package:
+            if not isinstance(calculated_package, (list, tuple)):
+                calculated_package = [calculated_package]
+            for pkg in calculated_package:
+                result[pkg] = {"name": pkg}
+        else:
+            temp = package_vars["name"]
+            result[temp] = {"name": temp}
+
+        return result
+
+    def get_supported_vars(self):
+
+        return ['conda_environment', 'upgrade', 'conda_channels', 'state', 'name']
+
+class VagrantPluginPkgMgr(BasePkgMgr):
+
+    def __init__(self):
+        pass
+
+    def get_name(self):
+
+        return "vagrant_plugin"
+
+    def get_supported_vars(self):
+
+        return ['name', 'update', 'plugin_source', 'version']
+
+
+SUPPORTED_PKG_MGRS = {
+    'generic': BasePkgMgr,
+    'git': GitPkgMgr,
+    'apt': AptPkgMgr,
+    'conda': CondaPkgMgr,
+    'nix': NixPkgMgr,
+    'yum': YumPkgMgr,
+    'pip': PipPkgMgr,
+    'vagrant_plugin': VagrantPluginPkgMgr
 }
 
-DEFAULT_PKG_MGR_VARS = ["name", "state"]
 
+DEFAULT_PKG_MGR_VARS = ["name", "state"]
 USE_TOP_LEVEL_AS_PKG_NAME = False
 
 class ActionModule(ActionBase):
@@ -175,100 +364,11 @@ class ActionModule(ActionBase):
 
         return result
 
-    def prepare_git(self, package, calculated_package, task_vars, result):
-        if calculated_package:
-            calculated_package = ensure_git_repo_format(calculated_package)
-            # we can be sure pkg_name is now a dict
-            return {calculated_package["repo"]: calculated_package}
-        else:
-            if "repo" in package.keys():
-                temp = ensure_git_repo_format(package["repo"], package.get("dest", None))
-            else:
-                temp = ensure_git_repo_format(package["name"], package.get("dest", None))
-
-            return {temp["repo"]: temp}
-
-    def prepare_apt(self, package, calculated_package, pkg_mgr, task_vars, result):
-
-        result = {}
-        if calculated_package:
-            if not isinstance(calculated_package, (list, tuple)):
-                calculated_package = [calculated_package]
-            for pkg in calculated_package:
-                if pkg.endswith(".deb"):
-                    result[pkg] = {"deb": pkg, "name": IGNORE_KEY, "update_cache": IGNORE_KEY, "package": IGNORE_KEY}
-                else:
-                    result[pkg] = {"name": pkg, "deb": IGNORE_KEY}
-        else:
-            temp = package["name"]
-            if temp.endswith(".deb"):
-                result[temp] = {"deb": temp, "name": IGNORE_KEY, "update_cache": IGNORE_KEY, "package": IGNORE_KEY}
-            else:
-                result[temp] = {"name": temp, "deb": IGNORE_KEY}
-
-        return result
-
-    def prepare_pip(self, package, calculated_package, pkg_mgr, task_vars, result):
-
-        result = {}
-        if calculated_package:
-            if not isinstance(calculated_package, (list, tuple)):
-                calculated_package = [calculated_package]
-            for pkg in calculated_package:
-                if pkg.endswith(".txt"):
-                    result[pkg] = {"requirements": pkg, "name": IGNORE_KEY}
-                else:
-                    result[pkg] = {"name": pkg, "requirements": IGNORE_KEY}
-        else:
-            temp = package["name"]
-            if temp.endswith(".txt"):
-                result[temp] = {"requirements": temp, "name": IGNORE_KEY}
-            else:
-                result[temp] = {"name": temp, "requirements": IGNORE_KEY}
-
-        return result
-
-    def prepare_conda(self, package, calculated_package, pkg_mgr, task_vars, result):
-
-        result = {}
-        if calculated_package:
-            if not isinstance(calculated_package, (list, tuple)):
-                calculated_package = [calculated_package]
-            for pkg in calculated_package:
-                result[pkg] = {"name": pkg}
-        else:
-            temp = package["name"]
-            result[temp] = {"name": temp}
-
-        return result
-
-
-    def prepare_generic(self, package, calculated_package, pkg_mgr, task_vars, result):
-
-        result = {}
-        if calculated_package:
-            if not isinstance(calculated_package, (list, tuple)):
-                calculated_package = [calculated_package]
-            for pkg in calculated_package:
-                result[pkg] = {"name": pkg}
-        else:
-            temp = package["name"]
-            result[temp] = {"name": temp}
-
-        return result
-
     def execute_package_module(self, package, calculated_package, auto, pkg_mgr, task_vars, result):
 
-        if pkg_mgr == 'git':
-            all_pkg_vars = self.prepare_git(package[VARS_KEY], calculated_package, task_vars, result)
-        elif pkg_mgr == 'apt':
-            all_pkg_vars = self.prepare_apt(package[VARS_KEY], calculated_package, pkg_mgr, task_vars, result)
-        elif pkg_mgr == 'conda':
-            all_pkg_vars = self.prepare_conda(package[VARS_KEY], calculated_package, pkg_mgr, task_vars, result)
-        elif pkg_mgr == 'pip':
-            all_pkg_vars = self.prepare_pip(package[VARS_KEY], calculated_package, pkg_mgr, task_vars, result)
-        else:
-            all_pkg_vars = self.prepare_generic(package[VARS_KEY], calculated_package, pkg_mgr, task_vars, result)
+        pkg_mgr_obj = SUPPORTED_PKG_MGRS.get(pkg_mgr, BasePkgMgr)()
+
+        all_pkg_vars = pkg_mgr_obj.prepare(package[VARS_KEY], calculated_package, task_vars, result)
 
         msgs = []
         overall_changed = False
@@ -290,7 +390,8 @@ class ActionModule(ActionBase):
             #display.display("nsbl: installing {}".format(pkg_id))
 
             new_module_args = {}
-            keys = PKG_MGR_VARS.get(pkg_mgr, None)
+            keys = pkg_mgr_obj.get_supported_vars()
+
             if not keys:
                 keys = DEFAULT_PKG_MGR_VARS
 
@@ -363,7 +464,6 @@ class ActionModule(ActionBase):
                         output["status"] = "ok"
 
                 display.display(json.dumps(output, encoding='utf-8'))
-
 
         if len(runs) == 1:
             return runs[0]
