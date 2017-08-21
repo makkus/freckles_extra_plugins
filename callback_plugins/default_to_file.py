@@ -56,6 +56,6 @@ class CallbackModule(CallbackModule_default):  # pylint: disable=too-few-public-
         self._last_task_banner = None
         super(CallbackModule, self).__init__()
 
-        log_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "logs", "run_log_ansible.log")
+        log_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "logs", "ansible_run_log")
 
         self._display = FileWriter(log_file)
