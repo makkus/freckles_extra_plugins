@@ -40,9 +40,9 @@ def missing_from_path(module, exe):
         else:
             # needed because Mac OS has some sort of wrapper script for git if xcode is not installed
             try:
-                git_output = module.run_command(['git', '--help'], check_rc=False)
+                rc, stdout, stderr = module.run_command(['git', '--help'], check_rc=False)
                 #git_output = "xcode-select"
-                if "xcode-select" in git_output:
+                if "xcode-select" in stderr:
                     return True
                 else:
                     return False
