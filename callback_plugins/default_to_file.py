@@ -1,13 +1,9 @@
 from __future__ import absolute_import, division, print_function
 
-import errno
 import os
-import sys
-
 from ansible.module_utils._text import to_bytes, to_text
 from ansible.plugins.callback.default import \
     CallbackModule as CallbackModule_default
-from ansible.utils.color import stringc
 from ansible.utils.display import Display
 
 __metaclass__ = type

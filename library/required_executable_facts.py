@@ -1,7 +1,3 @@
-import fnmatch
-import os
-import subprocess
-
 from ansible.module_utils.basic import *
 from ansible.module_utils.basic import AnsibleModule
 

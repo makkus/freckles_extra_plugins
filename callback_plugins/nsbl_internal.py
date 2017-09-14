@@ -1,14 +1,7 @@
 from __future__ import absolute_import, division, print_function
 
-import datetime
-import decimal
 import json
-import pprint
-import uuid
 
-import ansible
-from ansible import constants as C
-from ansible.executor.task_result import TaskResult
 from ansible.playbook.task_include import TaskInclude
 from ansible.plugins.callback import CallbackBase
 from six import string_types

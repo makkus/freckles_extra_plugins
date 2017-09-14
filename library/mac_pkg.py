@@ -26,11 +26,12 @@ EXAMPLES = '''
 import abc
 import hashlib
 import json
-import os
 import shutil
 import subprocess
 import tempfile
 import traceback
+
+import os
 from os import path
 
 

@@ -7,10 +7,9 @@ module: stow
 short_description: Manage links to dotfiles
 '''
 
-import json
-import os
 from distutils.spawn import find_executable
 
+import os
 from ansible.module_utils.basic import AnsibleModule
 
 try:

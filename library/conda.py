@@ -13,9 +13,6 @@ EXAMPLES = '''
 - nix: name=foo state=present
 '''
 
-
-import json
-import os
 from distutils.spawn import find_executable
 
 from ansible.module_utils.basic import *
