@@ -1,5 +1,4 @@
-
-#!/usr/bin/python -tt
+# !/usr/bin/python -tt
 # -*- coding: utf-8 -*-
 
 DOCUMENTATION = '''
@@ -26,8 +25,8 @@ POTENTIAL_CONDA_PATHS = [
     os.path.expanduser("~/anaconda/bin")
 ]
 
-def get_conda_bin(module):
 
+def get_conda_bin(module):
     conda_bin = find_executable('conda')
     if not conda_bin:
         for path in POTENTIAL_CONDA_PATHS:
@@ -39,15 +38,15 @@ def get_conda_bin(module):
 
     return conda_bin
 
-def get_environment_paraemter(environment):
 
+def get_environment_paraemter(environment):
     if environment:
         return "--name {}".format(environment)
     else:
         return ""
 
-def ensure_environment(module, environment):
 
+def ensure_environment(module, environment):
     if environment == "root":
         return
 
@@ -73,7 +72,6 @@ def ensure_environment(module, environment):
 
 
 def get_channel_parameters(channels):
-
     if not channels:
         return ""
     else:
@@ -83,17 +81,18 @@ def get_channel_parameters(channels):
 
         return result
 
-def upgrade_packages(module, environment=None, channels=None):
 
-    cmd = "{} update -y {} {} --all".format(get_conda_bin(module), get_channel_parameters(channels), get_environment_paraemter(environment))
+def upgrade_packages(module, environment=None, channels=None):
+    cmd = "{} update -y {} {} --all".format(get_conda_bin(module), get_channel_parameters(channels),
+                                            get_environment_paraemter(environment))
     rc, stdout, stderr = module.run_command(cmd, check_rc=False)
     if rc != 0:
         module.fail_json(msg="failed to upgrade conda packages: {}".format(stderr))
 
     module.exit_json(changed=True, msg="Upgraded conda packages.")
 
-def query_package(module, name, environment):
 
+def query_package(module, name, environment):
     cmd = "{} list --json {} -f {}".format(get_conda_bin(module), get_environment_paraemter(environment), name)
     rc, stdout, stderr = module.run_command(cmd)
 
@@ -106,8 +105,8 @@ def query_package(module, name, environment):
     else:
         return True
 
-def install_packages(module, packages, env=None, channels=None):
 
+def install_packages(module, packages, env=None, channels=None):
     if module.check_mode:
         for i, package in enumerate(packages):
             if query_package(module, package, env):
@@ -123,7 +122,8 @@ def install_packages(module, packages, env=None, channels=None):
         if query_package(module, package, env):
             continue
 
-        cmd = "{} install -y {} {} {}".format(get_conda_bin(module), get_environment_paraemter(env), get_channel_parameters(channels), package)
+        cmd = "{} install -y {} {} {}".format(get_conda_bin(module), get_environment_paraemter(env),
+                                              get_channel_parameters(channels), package)
         rc, stdout, stderr = module.run_command(cmd, check_rc=False)
 
         if rc != 0:
@@ -141,9 +141,9 @@ def main():
     module = AnsibleModule(
         argument_spec=dict(
             name=dict(aliases=['pkg', 'package']),
-            upgrade = dict(default=False, type='bool'),
-            conda_channels = dict(default=None, type='list', required=False),
-            conda_environment = dict(default="root", type='str', required=False),
+            upgrade=dict(default=False, type='bool'),
+            conda_channels=dict(default=None, type='list', required=False),
+            conda_environment=dict(default="root", type='str', required=False),
             state=dict(default='present', choices=['present', 'installed', 'absent', 'removed'])),
         required_one_of=[['name', 'upgrade']],
         mutually_exclusive=[['name', 'upgrade']],
@@ -161,13 +161,16 @@ def main():
         p['state'] = 'absent'
 
     if p['upgrade']:
-        upgrade_packages(module, module.params.get("conda_environment", None), module.params.get("conda_channels", None))
+        upgrade_packages(module, module.params.get("conda_environment", None),
+                         module.params.get("conda_channels", None))
 
     if p['name']:
         pkgs = p['name'].split(',')
 
         if p['state'] == 'present':
-            install_packages(module, pkgs, module.params.get("conda_environment", None), module.params.get("conda_channels", None))
+            install_packages(module, pkgs, module.params.get("conda_environment", None),
+                             module.params.get("conda_channels", None))
+
 
 if __name__ == '__main__':
     main()

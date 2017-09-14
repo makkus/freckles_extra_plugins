@@ -10,10 +10,11 @@ try:
     from __main__ import display
 except ImportError:
     from ansible.utils.display import Display
+
     display = Display()
 
-
 __metaclass__ = type
+
 
 class CallbackModule(CallbackBase):
     """
@@ -72,11 +73,10 @@ class CallbackModule(CallbackBase):
 
         return None
 
-
     def get_env_id(self):
 
-        #pprint.pprint(self.task.serialize())
-        #pprint.pprint(self.play.serialize())
+        # pprint.pprint(self.task.serialize())
+        # pprint.pprint(self.play.serialize())
 
         id = self.get_task_detail("role._role_params._env_id")
 
@@ -87,7 +87,6 @@ class CallbackModule(CallbackBase):
             return id
         else:
             return None
-
 
     def get_role_id(self):
 
@@ -103,18 +102,17 @@ class CallbackModule(CallbackBase):
         else:
             return None
 
-        # parents = self.get_task_detail("role._parents")
-        # if  parents:
+            # parents = self.get_task_detail("role._parents")
+            # if  parents:
             # for p in parents:
-                # if "freck_id" in p["_role_params"].keys():
+            # if "freck_id" in p["_role_params"].keys():
 
-                    # return p["_role_params"]["freck_id"]
-
+            # return p["_role_params"]["freck_id"]
 
     def print_output(self, category, result, item=None):
 
         # if self.task:
-            # pprint.pprint(self.task.serialize())
+        # pprint.pprint(self.task.serialize())
         output = {}
         output["category"] = category
         if category == "play_start":
@@ -177,7 +175,6 @@ class CallbackModule(CallbackBase):
             output["skipped"] = skipped
 
         display.display(json.dumps(output, encoding='utf-8'))
-
 
     def v2_runner_on_ok(self, result, **kwargs):
 

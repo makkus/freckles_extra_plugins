@@ -17,7 +17,7 @@ try:
 except NameError:
     from sets import Set as set
 
-IGNORE_STRING="freckle"
+IGNORE_STRING = "freckle"
 
 POTENTIAL_STOW_PATHS = [
     os.path.expanduser("~/.local/opt/conda/bin"),
@@ -27,8 +27,8 @@ POTENTIAL_STOW_PATHS = [
     os.path.expanduser("~/anaconda/bin")
 ]
 
-def get_stow_bin(module):
 
+def get_stow_bin(module):
     stow_bin = find_executable('stow')
     if not stow_bin:
         for path in POTENTIAL_STOW_PATHS:
@@ -40,8 +40,8 @@ def get_stow_bin(module):
 
     return stow_bin
 
-def stow(module, stow_version):
 
+def stow(module, stow_version):
     params = module.params
 
     state = params['state']
@@ -71,7 +71,7 @@ def stow(module, stow_version):
             conflict_files = set()
             for line in stderr.split("\n"):
                 conflict_file = None
-                if not "neither a link nor a directory"  in line:
+                if not "neither a link nor a directory" in line:
                     continue
                 conflict_file = line.split()[-1]
                 conflict_files.add(conflict_file)
@@ -88,9 +88,11 @@ def stow(module, stow_version):
                 if "LINK" in stderr:
                     changed = True
 
-                module.exit_json(changed=changed, stderr=stderr, msg="Deleted existing files: {}".format(list(conflict_files)))
+                module.exit_json(changed=changed, stderr=stderr,
+                                 msg="Deleted existing files: {}".format(list(conflict_files)))
             else:
                 module.fail_json(msg="failed to stow ( {} ) {}: {}".format(cmd, name, stderr))
+
 
 def main():
     module = AnsibleModule(
@@ -114,6 +116,7 @@ def main():
         module.fail_json("Can't execute/find 'stow': {}".format(stderr))
 
     stow(module, stow_version)
+
 
 if __name__ == '__main__':
     main()

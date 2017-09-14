@@ -35,16 +35,16 @@ WRAP = True
 
 BIN_CACHE = {}
 
-def get_source_file(module):
 
+def get_source_file(module):
     for source_file in POTENTIAL_SOURCE_FILES:
         if os.path.exists(source_file):
             return source_file
 
     module.fail_json(msg="Could not find nix source environment.")
 
-def get_nix_bin(module, bin_name):
 
+def get_nix_bin(module, bin_name):
     nix_bin = BIN_CACHE.get(bin_name, False)
 
     if not nix_bin:
@@ -58,12 +58,12 @@ def get_nix_bin(module, bin_name):
                     nix_bin = os.path.join(path, bin_name)
 
         if not nix_bin:
-            module.fail_json(msg="Could not find nix environment for executable '{}', tried: {}".format(bin_name, tried))
+            module.fail_json(
+                msg="Could not find nix environment for executable '{}', tried: {}".format(bin_name, tried))
 
         BIN_CACHE[bin_name] = nix_bin
 
     return nix_bin
-
 
 
 def query_package(module, name, state="present"):
@@ -73,7 +73,6 @@ def query_package(module, name, state="present"):
         else:
             cmd = "{} -q {}".format(get_nix_bin(module, "nix-env"), name)
 
-
         rc, stdout, stderr = module.run_command(cmd, check_rc=False)
 
         if rc == 0:
@@ -81,8 +80,8 @@ def query_package(module, name, state="present"):
 
         return False
 
-def update_cache(module):
 
+def update_cache(module):
     if WRAP:
         cmd = 'bash -c "source {}; {} --update"'.format(get_source_file(module), get_nix_bin(module, "nix-channel"))
     else:
@@ -94,8 +93,8 @@ def update_cache(module):
 
     module.exit_json(changed=True, msg="Updated nix cache.")
 
-def upgrade_packages(module):
 
+def upgrade_packages(module):
     if WRAP:
         cmd = 'bash -c "source {}; {} --upgrade"'.format(get_source_file(module), get_nix_bin(module, "nix-env"))
     else:
@@ -106,6 +105,7 @@ def upgrade_packages(module):
         module.fail_json(msg="failed to upgrade packages: {}".format(stderr))
 
     module.exit_json(changed=True, msg="Upgraded nix packages.")
+
 
 def install_packages(module, packages):
     install_c = 0
@@ -124,7 +124,8 @@ def install_packages(module, packages):
             continue
 
         if WRAP:
-            cmd = 'bash -c "source {}; {} -i {}"'.format(get_source_file(module), get_nix_bin(module, "nix-env"), package)
+            cmd = 'bash -c "source {}; {} -i {}"'.format(get_source_file(module), get_nix_bin(module, "nix-env"),
+                                                         package)
         else:
             cmd = "{} -i {}".format(get_nix_bin(module, "nix-env"), package)
 
@@ -140,12 +141,13 @@ def install_packages(module, packages):
 
     module.exit_json(changed=False, msg="package(s) already installed")
 
+
 def main():
     module = AnsibleModule(
         argument_spec=dict(
             name=dict(aliases=['pkg', 'package']),
-            upgrade = dict(default=False, type='bool'),
-            update_cache = dict(default=False, aliases=['update-cache'], type='bool'),
+            upgrade=dict(default=False, type='bool'),
+            update_cache=dict(default=False, aliases=['update-cache'], type='bool'),
             state=dict(default='present', choices=['present', 'installed', 'absent', 'removed'])),
         required_one_of=[['name', 'upgrade', 'update_cache']],
         mutually_exclusive=[['name', 'upgrade']],
@@ -173,6 +175,7 @@ def main():
 
         if p['state'] == 'present':
             install_packages(module, pkgs)
+
 
 if __name__ == '__main__':
     main()

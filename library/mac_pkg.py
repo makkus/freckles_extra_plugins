@@ -88,7 +88,6 @@ def run_command(module, args, check_rc=False, close_fds=False, executable=None, 
 
 
 class Archive(object):
-
     __metaclass__ = abc.ABCMeta
 
     def __init__(self, module, pkg):
@@ -117,7 +116,6 @@ class Archive(object):
 
         return self.params['url']
 
-
     def chown_dir(self, chown_user, target_path):
         if chown_user is not None:
             rc, out, err = self.module.run_command("%s -R %s %s" % (self.chown_path, chown_user, target_path))
@@ -133,11 +131,11 @@ class Archive(object):
             # module.exit_json(changed=False, msg="src: '%s'" % src)
             acquired = True
         else:
-            #get pkg from url
-            #wget --no-cookies --no-check-certificate --directory-prefix=${WORK_DIR} -c --header "Cookie: $COOKIE" ${URL}
-            #wget --no-cookies --no-check-certificate --directory-prefix=${WORK_DIR} -c ${URL}
-            #curl --location --insecure --cookie gpw_e24=http%3A%2F%2Fwww.oracle.com
-            #TODO: verify url
+            # get pkg from url
+            # wget --no-cookies --no-check-certificate --directory-prefix=${WORK_DIR} -c --header "Cookie: $COOKIE" ${URL}
+            # wget --no-cookies --no-check-certificate --directory-prefix=${WORK_DIR} -c ${URL}
+            # curl --location --insecure --cookie gpw_e24=http%3A%2F%2Fwww.oracle.com
+            # TODO: verify url
             url = self.params['url']
 
             curl_opts = ""
@@ -145,21 +143,21 @@ class Archive(object):
             if exists(self.params, 'curl_opts'):
                 curl_opts = self.params['curl_opts']
 
-            #TODO: make chown optional?
+            # TODO: make chown optional?
             chown_user = get_env('sudo_user', None)
             # self.module.exit_json(changed=False, msg="chown_user %s" % chown_user)
 
-            #TODO: use environment variable to override cachedir
+            # TODO: use environment variable to override cachedir
             cache_dir = path.expanduser(get_env("battleschool_cache_dir", "~/Library/Caches/battleschool"))
             download_dir = path.join(cache_dir, "downloads")
             if not path.exists(download_dir):
                 os.makedirs(download_dir)
-                #TODO: only chown downloaded item, only chown if just downloaded
+                # TODO: only chown downloaded item, only chown if just downloaded
                 self.chown_dir(chown_user, download_dir)
             # self.module.exit_json(changed=False, msg="download_dir %s" % download_dir)
             # self.module.exit_json(changed=False, msg="cache_dir %s" % get_env('battleschool_cache_dir', ""))
 
-            #TODO: verify write perms of dest parent
+            # TODO: verify write perms of dest parent
             if exists(self.params, 'dest'):
                 dest = self.params['dest']
 
@@ -182,7 +180,7 @@ class Archive(object):
             # self.module.exit_json(changed=False, msg="pre_cmd %s, output_opts %s, curl_opts %s, do_download %s"
             #                                          % (pre_cmd, output_opts, curl_opts, do_download))
 
-            #force delete
+            # force delete
             if path.exists(dest) and self.params['force']:
                 do_download = True
                 if path.isfile(dest):
@@ -195,7 +193,7 @@ class Archive(object):
 
             if do_download:
                 download_cmd = "%s --insecure --silent --location %s %s '%s'" % (
-                        self.curl_path, output_opts, curl_opts, url)
+                    self.curl_path, output_opts, curl_opts, url)
                 # self.module.exit_json(changed=False, msg="download_cmd %s" % download_cmd)
                 rc, out, err = run_command(self.module, download_cmd, cwd=cwd)
                 if rc > 0:
@@ -215,7 +213,7 @@ class Archive(object):
                 dest = "%s/%s" % (dest, files[0])
             # self.module.exit_json(changed=False, msg="dest %s" % dest)
 
-            #TODO: only chown downloaded item
+            # TODO: only chown downloaded item
             if do_download and acquired:
                 self.chown_dir(chown_user, download_dir)
 
@@ -225,11 +223,10 @@ class Archive(object):
 
 
 class ZipArchive(Archive):
-
     def __init__(self, module, pkg):
         super(ZipArchive, self).__init__(module, pkg)
         self.unzip_path = module.get_bin_path('unzip', True, ['/usr/bin'])
-        #TODO: override target_dir
+        # TODO: override target_dir
         self.target_dir = tempfile.mkdtemp(suffix='-zip-extract', prefix='mac_pkg-')
 
     def open(self):
@@ -245,16 +242,15 @@ class ZipArchive(Archive):
 
 
 class TarArchive(Archive):
-
     def __init__(self, module, pkg):
         super(TarArchive, self).__init__(module, pkg)
         self.tar_path = module.get_bin_path('tar', True, ['/usr/bin'])
         self.tar_opts = self.params['tar_opts']
-        #TODO: override target_dir
+        # TODO: override target_dir
         self.target_dir = tempfile.mkdtemp(suffix='-tar-extract', prefix='mac_pkg-')
 
     def open(self):
-        #self.module.exit_json(changed=False,msg="tar_path %s, tar_opts %s, pkg_path %s, target_dir %s, archive_path %s"
+        # self.module.exit_json(changed=False,msg="tar_path %s, tar_opts %s, pkg_path %s, target_dir %s, archive_path %s"
         #                                        % (self.tar_path, self.tar_opts, self.pkg_path(), self.target_dir,
         #                                           self.params['archive_path']))
         rc, out, err = self.module.run_command("%s %s %s -C %s" % (self.tar_path, self.tar_opts, self.pkg_path(),
@@ -268,7 +264,6 @@ class TarArchive(Archive):
 
 
 class DmgArchive(Archive):
-
     def __init__(self, module, pkg):
         super(DmgArchive, self).__init__(module, pkg)
         self.hdiutil_path = module.get_bin_path('hdiutil', True, ['/usr/bin'])
@@ -283,8 +278,8 @@ class DmgArchive(Archive):
             hdi_pre = "echo y |"
             hdi_post = ""
 
-        #if dmg mount and record volume path
-        #hdiutil attach Vagrant-1.3.0.dmg | grep Volumes | awk '{print $3}'
+        # if dmg mount and record volume path
+        # hdiutil attach Vagrant-1.3.0.dmg | grep Volumes | awk '{print $3}'
         command = "%s %s attach \"%s\" %s " % (hdi_pre, self.hdiutil_path, self._pkg_path, hdi_post)
         # self.module.exit_json(changed=False, msg="hdicmd: %s" % command)
         rc, out, err = run_command(self.module, command)
@@ -304,7 +299,6 @@ class DmgArchive(Archive):
 
 
 class NoneArchive(Archive):
-
     def open(self):
         pass
 
@@ -313,7 +307,6 @@ class NoneArchive(Archive):
 
 
 class Package(object):
-
     __metaclass__ = abc.ABCMeta
 
     def __init__(self, module):
@@ -339,34 +332,33 @@ class Package(object):
 
 
 class PkgPackage(Package):
-
     def __init__(self, module):
         super(PkgPackage, self).__init__(module)
         self.installer_path = module.get_bin_path('installer', True, ['/usr/sbin'])
         self.pkgutil_path = module.get_bin_path('pkgutil', True, ['/usr/sbin'])
-        #TODO: add creates which would override pkg_version
+        # TODO: add creates which would override pkg_version
 
         self._pkg_name = self.params['pkg_name']
-        #find installed version
+        # find installed version
         self._version = self.find_version(module)
         # self.module.exit_json(changed=False, msg="_version %s, _pkg_name %s" % (self._version, self._pkg_name))
 
     def find_version(self, module):
         rc, out, err = run_command(self.module, "%s --pkg-info=%s 2>&1 |grep version| awk '{print $2}'" %
-                                  (self.pkgutil_path, self._pkg_name))
+                                   (self.pkgutil_path, self._pkg_name))
         if rc > 0:
             module.fail_json(msg="failed to find version via pkgutil %s: %s %s" % (self._pkg_name, out, err))
         return out.strip()
 
     def install(self, pkg_path):
-        #install package file
-        #installer -pkg "${PGK_DIR}"/"${PKG_FILE}" -target /
-        #TODO: support target param
+        # install package file
+        # installer -pkg "${PGK_DIR}"/"${PKG_FILE}" -target /
+        # TODO: support target param
         rc, out, err = self.module.run_command("%s -pkg \"%s\" -target /" % (self.installer_path, pkg_path))
         if rc > 0:
             return out, err
 
-        #no error, update the version from pkg_util
+        # no error, update the version from pkg_util
         self._version = self.find_version(self.module)
         return False
 
@@ -391,13 +383,12 @@ class PkgPackage(Package):
 
 
 class AppPackage(Package):
-
     def __init__(self, module):
         super(AppPackage, self).__init__(module)
         if exists(self.params, 'creates'):
             self._app_creates = self.params['creates']
             if not self._app_creates.startswith("/"):
-                #not an absolute path, prepend /Applications
+                # not an absolute path, prepend /Applications
                 self.set_applications_path('creates')
         elif exists(self.params, 'archive_path'):
             self.set_applications_path('archive_path')
@@ -423,7 +414,6 @@ class AppPackage(Package):
 
 
 class ScriptPackage(Package):
-
     def __init__(self, module):
         super(ScriptPackage, self).__init__(module)
         self._creates = self.params['creates']
@@ -471,7 +461,6 @@ def exists(dict, key):
 
 
 class Installer(object):
-
     def __init__(self, module):
         self.module = module
         self.params = module.params
@@ -501,11 +490,12 @@ class Installer(object):
 
             if failed:
                 archive.close()
-                self.module.fail_json(msg="failed to install package %s: %s %s" % (archive.pkg_path(), failed[0], failed[1]))
+                self.module.fail_json(
+                    msg="failed to install package %s: %s %s" % (archive.pkg_path(), failed[0], failed[1]))
 
             archive.close()
-            #self.module.exit_json(changed=False, msg="pkg %s, archive %s" % (pkg, archive))
-            self.module.exit_json(changed=True,  version=pkg.version(), msg="installed package %s" % pkg.name())
+            # self.module.exit_json(changed=False, msg="pkg %s, archive %s" % (pkg, archive))
+            self.module.exit_json(changed=True, version=pkg.version(), msg="installed package %s" % pkg.name())
 
     def _instantiate(self, class_key, class_suffix, pkg=None):
         class_name = "%s%s" % (self.params[class_key].title(), class_suffix)
@@ -535,7 +525,8 @@ if path.isfile(extra_vars_path):
 else:
     extra_vars = {}
 
-def get_env(name, default, converter = None):
+
+def get_env(name, default, converter=None):
     if name in extra_vars:
         val = extra_vars[name]
     elif name in os.environ:
@@ -588,12 +579,13 @@ def main():
     if p["state"] in ["present", "installed"]:
         installer.install(acquire_only)
 
-    #TODO: implement remove
+    # TODO: implement remove
     elif p["state"] in ["absent", "removed"]:
-        #remove_package(module, pkgutil_path, pkg)
+        # remove_package(module, pkgutil_path, pkg)
         module.fail_json(changed=False, msg="remove package NOT IMPLEMENTED")
 
+
 # this is magic, see lib/ansible/module_common.py
-#<<INCLUDE_ANSIBLE_MODULE_COMMON>>
+# <<INCLUDE_ANSIBLE_MODULE_COMMON>>
 
 main()

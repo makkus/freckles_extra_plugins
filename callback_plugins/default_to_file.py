@@ -10,7 +10,6 @@ __metaclass__ = type
 
 
 class FileWriter(Display):
-
     def __init__(self, log_file, verbosity=4):
         self.log_file = log_file
         super(FileWriter, self).__init__(verbosity)
@@ -29,7 +28,7 @@ class FileWriter(Display):
             # characters that are invalid in the user's locale
             msg2 = to_text(msg2, self._output_encoding(stderr=stderr))
 
-            #print(msg2, file=self.log_file)
+            # print(msg2, file=self.log_file)
             with open(self.log_file, "ab+") as fd:
                 fd.write("{}\n".format(msg))
         except:
@@ -47,7 +46,6 @@ class CallbackModule(CallbackModule_default):  # pylint: disable=too-few-public-
     CALLBACK_NAME = 'default_to_file'
 
     def __init__(self):
-
         self._play = None
         self._last_task_banner = None
         super(CallbackModule, self).__init__()
