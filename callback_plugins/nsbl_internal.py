@@ -33,6 +33,23 @@ class CallbackModule(CallbackBase):
         self.task_serialized = False
         self.play_serialized = False
 
+    def find_role_params(self, role):
+
+        if not role._role_params:
+            parents = role._parents
+            for p in parents:
+                params = self.find_role_params(p)
+                if params:
+                    return params
+
+        else:
+            return role._role_params
+
+        return {}
+        # display.display(str(self.task._role._parents))
+        # return {}
+
+
     def get_task_serialized(self):
 
         if not self.task_serialized:
@@ -42,7 +59,7 @@ class CallbackModule(CallbackBase):
             if not self.task._role:
                 role_params = {}
             else:
-                role_params = self.task._role._role_params
+                role_params = self.find_role_params(self.task._role)
 
             action = self.task.action
 
