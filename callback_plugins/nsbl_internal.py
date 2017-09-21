@@ -1,6 +1,7 @@
 from __future__ import absolute_import, division, print_function
 
 import json
+import copy
 
 from ansible.playbook.task_include import TaskInclude
 from ansible.plugins.callback import CallbackBase
@@ -35,7 +36,26 @@ class CallbackModule(CallbackBase):
     def get_task_serialized(self):
 
         if not self.task_serialized:
-            self.task_serialized = self.task.serialize()
+
+            name = self.task.name
+
+            if not self.task._role:
+                role_params = {}
+            else:
+                role_params = self.task._role._role_params
+
+            action = self.task.action
+
+            ignore_errors = self.task.ignore_errors
+            if ignore_errors == None:
+                ignore_errors = False
+
+            self.task_serialized = task_dict = {}
+            task_dict["name"] = name
+            task_dict["ignore_errors"] = ignore_errors
+            task_dict["action"] = action
+            task_dict["role_params"] = role_params
+            # self.task_serialized = self.task.serialize()
 
         return self.task_serialized
 
@@ -50,11 +70,14 @@ class CallbackModule(CallbackBase):
 
         if not self.task:
             return None
-        temp = self.get_task_serialized()
-        for level in detail_key.split("."):
-            temp = temp.get(level, {})
 
-        return temp
+        return self.get_task_serialized().get(detail_key, None)
+
+        # temp = self.get_task_serialized()
+        # for level in detail_key.split("."):
+            # temp = temp.get(level, {})
+
+        # return temp
 
     def get_task_name(self):
 
@@ -78,29 +101,36 @@ class CallbackModule(CallbackBase):
         # pprint.pprint(self.task.serialize())
         # pprint.pprint(self.play.serialize())
 
-        id = self.get_task_detail("role._role_params._env_id")
+        task_role_params = self.get_task_detail("role_params")
+        id = task_role_params.get("_env_id", None)
 
-        if not isinstance(id, int):
-            id = self.get_recursive_role_detail("_env_id", self.get_task_serialized().get("role", {}))
+        return id
+        # id = self.get_task_detail("role._role_params._env_id")
 
-        if isinstance(id, int):
-            return id
-        else:
-            return None
+        # if not isinstance(id, int):
+            # id = self.get_recursive_role_detail("_env_id", self.get_task_serialized().get("role", {}))
+
+        # if isinstance(id, int):
+            # return id
+        # else:
+            # return None
 
     def get_role_id(self):
 
         # pprint.pprint(self.task.serialize())
         # pprint.pprint(self.play.serialize())
 
-        id = self.get_task_detail("role._role_params._role_id")
+        task_role_params = self.get_task_detail("role_params")
+        id = task_role_params.get("_role_id", None)
+        return id
+        # id = self.get_task_detail("role._role_params._role_id")
 
-        if not isinstance(id, int):
-            id = self.get_recursive_role_detail("_role_id", self.get_task_serialized().get("role", {}))
-        if isinstance(id, int):
-            return id
-        else:
-            return None
+        # if not isinstance(id, int):
+            # id = self.get_recursive_role_detail("_role_id", self.get_task_serialized().get("role", {}))
+        # if isinstance(id, int):
+            # return id
+        # else:
+            # return None
 
             # parents = self.get_task_detail("role._parents")
             # if  parents:
@@ -115,6 +145,7 @@ class CallbackModule(CallbackBase):
         # pprint.pprint(self.task.serialize())
         output = {}
         output["category"] = category
+
         if category == "play_start":
             roles = self.get_play_serialized().get("roles", {})
             env_id = None
@@ -126,6 +157,8 @@ class CallbackModule(CallbackBase):
             return
 
         temp = self.get_role_id()
+        # display.display(json.dumps(output, encoding='utf-8'))
+        # return
         output["_role_id"] = temp
         temp = self.get_env_id()
         output["_env_id"] = temp
