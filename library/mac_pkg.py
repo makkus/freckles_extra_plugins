@@ -33,6 +33,7 @@ import traceback
 
 import os
 from os import path
+from ansible.module_utils.basic import AnsibleModule
 
 
 def run_command(module, args, check_rc=False, close_fds=False, executable=None, data=None, cwd=None):
