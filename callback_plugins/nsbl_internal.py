@@ -210,6 +210,10 @@ class CallbackModule(CallbackBase):
             msg = result._result.get("msg", None)
             if msg:
                 output["msg"] = msg
+            stdout = result._result.get("stdout", None)
+            if stdout:
+                output["stdout"] = stdout
+                output["stdout_lines"] = result._result.get("stdout_lines")
             stderr = result._result.get("stderr", None)
             if stderr:
                 output["stderr"] = stderr
