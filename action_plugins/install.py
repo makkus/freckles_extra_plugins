@@ -401,16 +401,12 @@ class ActionModule(ActionBase):
             if self.nsbl_env:
                 output = {"category": "nsbl_item_started", "action": "install",
                           "item": "{} (using: {})".format(pkg_id, pkg_mgr)}
-                # env_id = task_vars['vars'].get('_env_id', None)
-                # if env_id != None:
-                # msg["_env_id"] = env_id
-                # task_id = task_vars['vars'].get('_tasks_id', None)
-                # if task_id != None:
-                # msg["_task_id"] = task_id
                 display.display(json.dumps(output, encoding='utf-8'))
             self._play_context.become = get_pkg_mgr_sudo(pkg_mgr)
+
             run = self._execute_module(module_name=pkg_mgr, module_args=new_module_args, task_vars=task_vars,
                                        wrap_async=self._task.async)
+
             # print("ignore: {}".format(run))
             runs.append(run)
 
