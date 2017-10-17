@@ -267,6 +267,23 @@ class ActionModule(ActionBase):
         auto = pkg_mgr == 'auto'
 
         facts = self._execute_module(module_name='setup', module_args=dict(gather_subset='!all'), task_vars=task_vars)
+
+        if "ansible_facts" not in facts.keys():
+#            import pprint
+#            raise Exception(facts)
+        # if facts.get("rc", -1000) != 0:
+        # if facts["failed"]:
+            # msg = facts.get("msg", "")
+            # module_stderr = facts.get("module_stderr")
+            # if module_stderr:
+            #     msg = msg + "\n{}".format(module_stderr)
+            # module_stdout = facts.get("module_stdout")
+            # if module_stdout:
+            #     msg = msg + "\n{}".format(module_stdout)
+            # result['failed'] = True
+            # result['msg'] = msg
+            return facts
+
         if auto:
             pkg_mgr = facts['ansible_facts'].get('ansible_pkg_mgr', None)
         os_family = facts['ansible_facts'].get('ansible_os_family', None)
