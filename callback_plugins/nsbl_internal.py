@@ -208,7 +208,7 @@ class CallbackModule(CallbackBase):
         else:
             # output["result"] = result._result
             msg = result._result.get("msg", None)
-            if msg:
+            if msg and msg != "MODULE FAILURE":
                 output["msg"] = msg
             stdout = result._result.get("stdout", None)
             if stdout:
@@ -218,6 +218,18 @@ class CallbackModule(CallbackBase):
             if stderr:
                 output["stderr"] = stderr
                 output["stderr_lines"] = result._result.get("stderr_lines")
+            module_stderr = result._result.get("module_stderr")
+            if module_stderr:
+                output.setdefault("stderr", "")
+                output["stderr"] = output["stderr"] + "\n{}".format(module_stderr)
+                output.setdefault("stderr_lines", [])
+                output["stderr_lines"].append(module_stderr)
+            module_stdout = result._result.get("module_stdout")
+            if module_stdout:
+                output.setdefault("stdout", "")
+                output["stdout"] = output["stdout"] + "\n{}".format(module_stdout)
+                output.setdefault("stdout_lines", [])
+                output["stdout_lines"].append(module_stdout)
 
             if result._result.get('changed', False):
                 status = 'changed'
