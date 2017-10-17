@@ -207,17 +207,6 @@ class CallbackModule(CallbackBase):
             output["result"] = {}
         else:
             # output["result"] = result._result
-            msg = result._result.get("msg", None)
-            if msg and msg != "MODULE FAILURE":
-                output["msg"] = msg
-            stdout = result._result.get("stdout", None)
-            if stdout:
-                output["stdout"] = stdout
-                output["stdout_lines"] = result._result.get("stdout_lines")
-            stderr = result._result.get("stderr", None)
-            if stderr:
-                output["stderr"] = stderr
-                output["stderr_lines"] = result._result.get("stderr_lines")
             module_stderr = result._result.get("module_stderr")
             if module_stderr:
                 output.setdefault("stderr", "")
@@ -230,6 +219,20 @@ class CallbackModule(CallbackBase):
                 output["stdout"] = output["stdout"] + "\n{}".format(module_stdout)
                 output.setdefault("stdout_lines", [])
                 output["stdout_lines"].append(module_stdout)
+            msg = result._result.get("msg", None)
+            if msg:
+                if msg != "MODULE FAILURE":
+                    output["msg"] = msg
+                else:
+                    output["msg"] = module_stderr
+            stdout = result._result.get("stdout", None)
+            if stdout:
+                output["stdout"] = stdout
+                output["stdout_lines"] = result._result.get("stdout_lines")
+            stderr = result._result.get("stderr", None)
+            if stderr:
+                output["stderr"] = stderr
+                output["stderr_lines"] = result._result.get("stderr_lines")
 
             if result._result.get('changed', False):
                 status = 'changed'

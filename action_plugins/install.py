@@ -447,6 +447,11 @@ class ActionModule(ActionBase):
             else:
                 run_msg = None
 
+            if "module_stderr" in run.keys():
+                run_module_stderr = run['module_stderr']
+            else:
+                run_module_stderr = None
+
             if changed:
                 overall_changed = True
                 installed.append(pkg_id)
@@ -456,7 +461,11 @@ class ActionModule(ActionBase):
             if self.nsbl_env:
                 output = {"item": "{} (using: {})".format(pkg_id, pkg_mgr)}
                 if run_msg:
-                    output["msg"] = run_msg
+                    if run_msg == "MODULE FAILURE" and run_module_stderr:
+                        output["msg"] = run_module_stderr
+                    else:
+                        output["msg"] = run_msg
+
                     output["action"] = "install"
                 if run_failed:
                     output["failed"] = True
