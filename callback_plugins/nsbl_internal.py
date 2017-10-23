@@ -173,6 +173,8 @@ class CallbackModule(CallbackBase):
             display.display(json.dumps(output, encoding='utf-8'))
             return
 
+        if category == "failed":
+            output['reason'] = result._result.get("reason", "n/a")
         temp = self.get_role_id()
         # display.display(json.dumps(output, encoding='utf-8'))
         # return
@@ -225,6 +227,10 @@ class CallbackModule(CallbackBase):
                     output["msg"] = msg
                 else:
                     output["msg"] = module_stderr
+
+            if not output.get("msg", False) and output.get("reason", False):
+                output["msg"] = output.get("reason")
+
             stdout = result._result.get("stdout", None)
             if stdout:
                 output["stdout"] = stdout
