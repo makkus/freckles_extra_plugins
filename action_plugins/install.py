@@ -148,6 +148,7 @@ class PipPkgMgr(BasePkgMgr):
     def prepare(self, package_vars, calculated_package, task_vars, result):
 
         result = {}
+
         if calculated_package:
             if not isinstance(calculated_package, (list, tuple)):
                 calculated_package = [calculated_package]
@@ -363,14 +364,19 @@ class ActionModule(ActionBase):
             result['skipped'] = True
             return result
 
-        module_result = self.execute_package_module(package, calculated_package, auto, pkg_mgr, task_vars, result)
+        if "become" in package[VARS_KEY].keys():
+            become = package[VARS_KEY]["become"]
+        else:
+            become = get_pkg_mgr_sudo(pkg_mgr)
+
+        module_result = self.execute_package_module(package, calculated_package, auto, pkg_mgr, become, task_vars, result)
 
         if module_result:
             result.update(module_result)
 
         return result
 
-    def execute_package_module(self, package, calculated_package, auto, pkg_mgr, task_vars, result):
+    def execute_package_module(self, package, calculated_package, auto, pkg_mgr, become, task_vars, result):
 
         pkg_mgr_obj = SUPPORTED_PKG_MGRS.get(pkg_mgr, BasePkgMgr)()
 
@@ -419,7 +425,8 @@ class ActionModule(ActionBase):
                 output = {"category": "nsbl_item_started", "action": "install",
                           "item": "{} (using: {})".format(pkg_id, pkg_mgr)}
                 display.display(json.dumps(output, encoding='utf-8'))
-            self._play_context.become = get_pkg_mgr_sudo(pkg_mgr)
+
+            self._play_context.become = become
 
             run = self._execute_module(module_name=pkg_mgr, module_args=new_module_args, task_vars=task_vars,
                                        wrap_async=self._task.async)
