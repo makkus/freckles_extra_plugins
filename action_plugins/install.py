@@ -316,8 +316,7 @@ class ActionModule(ActionBase):
 
         if pkg_mgr in ['auto', 'unknown']:
             result['failed'] = True
-            result[
-                'msg'] = 'Could not detect which package manager to use. Try gathering facts or setting the "use" option.'
+            result['msg'] = 'Could not detect which package manager to use. Try gathering facts or setting the "use" option.'
             return result
 
         if pkg_mgr not in self._shared_loader_obj.module_loader:
@@ -355,6 +354,8 @@ class ActionModule(ActionBase):
             # return result
 
         if not auto or not calculated_package_platform:
+            calculated_package = calculated_package_pkg_mgr
+        elif (calculated_package_platform == "ignore" or calculated_package_platform == "omit") and calculated_package_pkg_mgr:
             calculated_package = calculated_package_pkg_mgr
         else:
             calculated_package = calculated_package_platform
