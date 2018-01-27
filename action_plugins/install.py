@@ -3,6 +3,7 @@ from __future__ import absolute_import, division, print_function
 import json
 
 import os
+import copy
 from ansible import constants as C
 from ansible.plugins.action import ActionBase
 from frkl import frkl
@@ -138,6 +139,32 @@ class NixPkgMgr(BasePkgMgr):
         return ["name", "state"]
 
 
+class NpmPkgMgr(BasePkgMgr):
+    def __init__(self):
+        pass
+
+    def get_name(self):
+        return "npm"
+
+    def get_supported_vars(self):
+        return ["executable", "global", "ignore_scripts", "name", "path", "production", "registry", "state", "version"]
+
+    # probably better not to mess with default vars, otherwise:
+    # def prepare(self, package_vars, calculated_package, task_vars, result):
+
+    #     name = package_vars["name"]
+
+    #     valid_vars = copy.deepcopy(package_vars)
+    #     for k in package_vars.keys():
+    #         if k not in self.get_supported_vars():
+    #             valid_vars.pop(k)
+
+    #     if not "global" in valid_vars.keys():
+    #         valid_vars["global"] = True
+
+    #     return {name: valid_vars}
+
+
 class PipPkgMgr(BasePkgMgr):
     def __init__(self):
         pass
@@ -147,24 +174,24 @@ class PipPkgMgr(BasePkgMgr):
 
     def prepare(self, package_vars, calculated_package, task_vars, result):
 
-        result = {}
+        result_v = {}
 
         if calculated_package:
             if not isinstance(calculated_package, (list, tuple)):
                 calculated_package = [calculated_package]
             for pkg in calculated_package:
                 if pkg.endswith(".txt"):
-                    result[pkg] = {"requirements": pkg, "name": IGNORE_KEY}
+                    result_v[pkg] = {"requirements": pkg, "name": IGNORE_KEY}
                 else:
-                    result[pkg] = {"name": pkg, "requirements": IGNORE_KEY}
+                    result_v[pkg] = {"name": pkg, "requirements": IGNORE_KEY}
         else:
             temp = package_vars["name"]
             if temp.endswith(".txt"):
-                result[temp] = {"requirements": temp, "name": IGNORE_KEY}
+                result_v[temp] = {"requirements": temp, "name": IGNORE_KEY}
             else:
-                result[temp] = {"name": temp, "requirements": IGNORE_KEY}
+                result_v[temp] = {"name": temp, "requirements": IGNORE_KEY}
 
-        return result
+        return result_v
 
     def get_supported_vars(self):
 
@@ -217,6 +244,7 @@ SUPPORTED_PKG_MGRS = {
     'nix': NixPkgMgr,
     'yum': YumPkgMgr,
     'pip': PipPkgMgr,
+    'npm': NpmPkgMgr,
     'vagrant_plugin': VagrantPluginPkgMgr
 }
 
