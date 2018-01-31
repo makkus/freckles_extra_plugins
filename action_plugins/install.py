@@ -603,7 +603,14 @@ class ActionModule(ActionBase):
         elif (calculated_package_platform == "ignore" or calculated_package_platform == "omit") and calculated_package_pkg_mgr:
             calculated_package = calculated_package_pkg_mgr
         else:
-            calculated_package = calculated_package_platform
+            if pkg_mgr == 'homebrew' and os_family == "Darwin":
+                if calculated_package_platform.startswith("cask:"):
+                    pkg_mgr = 'homebrew_cask'
+                    calculated_package = calculated_package_platform[5:]
+                else:
+                    calculated_package = calculated_package_platform
+            else:
+                calculated_package = calculated_package_platform
 
         if calculated_package in ['ignore', 'omit']:
             result['msg'] = "Ignoring package {}".format(package[VARS_KEY]["name"])
