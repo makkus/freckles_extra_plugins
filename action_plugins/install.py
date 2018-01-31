@@ -38,6 +38,8 @@ def get_pkg_mgr_sudo(mgr):
         return False
     elif mgr == 'homebrew':
         return False
+    elif mgr == 'homebrew_cask':
+        return False
     elif mgr == 'pip':
         return False
     elif mgr == 'npm':
