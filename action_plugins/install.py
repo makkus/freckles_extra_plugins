@@ -7,7 +7,7 @@ import copy
 from ansible import constants as C
 from ansible.plugins.action import ActionBase
 from frkl import frkl
-from nsbl.nsbl import ensure_git_repo_format, get_pkg_mgr_sudo
+from nsbl.nsbl import ensure_git_repo_format
 from requests.structures import CaseInsensitiveDict
 
 __metaclass__ = type
@@ -24,6 +24,31 @@ boolean = C.mk_boolean
 IGNORE_KEY = "IGNORE_THIS_KEY"
 VARS_KEY = "vars"
 
+# TODO, use the respective classes for that:
+def get_pkg_mgr_sudo(mgr):
+    """Simple function to determine whether a given package manager needs sudo rights or not.
+    """
+    if mgr == 'no_install':
+        return False
+    elif mgr == 'nix':
+        return False
+    elif mgr == 'conda':
+        return False
+    elif mgr == 'git':
+        return False
+    elif mgr == 'homebrew':
+        return False
+    elif mgr == 'pip':
+        return False
+    elif mgr == 'npm':
+        return False
+    elif mgr == 'get_url':
+        return False
+    elif mgr == 'unarchive':
+        return False
+    else:
+        return True
+
 
 class BasePkgMgr(object):
     def __init__(self):
@@ -32,7 +57,7 @@ class BasePkgMgr(object):
     def get_name(self):
         return "generic"
 
-    def prepare(self, package_vars, calculated_package, task_vars, result):
+    def prepare(self, package_vars, calculated_package, task_vars, result, parent):
         """Returns all vars the package needs."""
 
         result = {}
@@ -63,7 +88,7 @@ class GitPkgMgr(BasePkgMgr):
     def get_name(self):
         return "git"
 
-    def prepare(self, package_vars, calculated_package, task_vars, result):
+    def prepare(self, package_vars, calculated_package, task_vars, result, parent):
         if calculated_package:
             calculated_package = ensure_git_repo_format(calculated_package)
             # we can be sure pkg_name is now a dict
@@ -82,6 +107,118 @@ class GitPkgMgr(BasePkgMgr):
                 "recursive", "reference", "refspec", "repo", "ssh_opts", "track_submodules", "umask", "update",
                 "verify_commit", "version"]
 
+class GetUrlPkgMgr(BasePkgMgr):
+    def __init__(self):
+        pass
+
+    def get_name(self):
+        return "get_url"
+
+    def prepare(self, package_vars, calculated_package, task_vars, result, parent):
+        result = {}
+        if calculated_package:
+            if not isinstance(calculated_package, (list, tuple)):
+                calculated_package = [calculated_package]
+            for pkg in calculated_package:
+                if pkg.startswith("http") or pkg.startswith("ftp"):
+                    result[pkg] = {"url": pkg, "name": IGNORE_KEY}
+                else:
+                    raise Exception("Can only download via http/https or ftp, invalid url: {}".format(pkg))
+
+        else:
+            temp = copy.deepcopy(package_vars)
+            if "name" in package_vars.keys():
+                name = package_vars["name"]
+                temp["name"] = IGNORE_KEY
+
+                if "url" not in package_vars.keys():
+                    temp["url"] = name
+
+            result[temp["url"]] = temp
+
+        dests = set()
+        for pkg, details in result.items():
+
+            dest = details.setdefault("dest", "~/.local/bin")
+            mode = details.setdefault("mode", "0775")
+            dests.add(os.path.dirname(dest))
+
+        for dest_dir in dests:
+            task_msg = "creating folder: {}".format(dest_dir)
+            module_args = {"path": dest_dir, "recurse": True, "state": "directory"}
+
+            if parent.nsbl_env:
+                output = {"category": "nsbl_item_started", "action": "install",
+                          "item": task_msg}
+                display.display(json.dumps(output, encoding='utf-8'))
+
+            # TODO: maybe print what's going on to the user?
+            run = parent._execute_module(module_name="file", module_args=module_args, task_vars=task_vars, wrap_async=parent._task.async)
+
+            parent.add_run(run, False, False, False, task_msg)
+
+        return result
+
+    def get_supported_vars(self):
+
+        return ["attributes", "backup", "checksum", "client_cert", "client_key", "dest", "force", "force_basic_auth", "group", "headers", "mode", "others", "owner", "selevel", "serole", "setype", "seuser", "sha256sum", "timeout", "tmp_dest", "unsafe_writes", "url", "url_password", "url_username", "use_proxy", "validate_certs"]
+
+
+class UnarchivePkgMgr(BasePkgMgr):
+    def __init__(self):
+        pass
+
+    def get_name(self):
+        return "unarchive"
+
+    def prepare(self, package_vars, calculated_package, task_vars, result, parent):
+
+        result = {}
+        if calculated_package:
+            if not isinstance(calculated_package, (list, tuple)):
+                calculated_package = [calculated_package]
+            for pkg in calculated_package:
+                result[pkg] = {"src": pkg, "name": IGNORE_KEY}
+
+        else:
+            temp = copy.deepcopy(package_vars)
+            if "name" in package_vars.keys():
+                name = package_vars["name"]
+                temp["name"] = IGNORE_KEY
+
+            if "src" not in package_vars.keys():
+                temp["src"] = name
+
+            result[temp["src"]] = temp
+
+        dests = set()
+        for pkg, details in result.items():
+
+            if pkg.startswith("http") or pkg.startswith("ftp") and "remote_src" not in details.keys():
+                details["remote_src"] =  True
+
+            dest = details.setdefault("dest", "~/.local/opt/")
+            dests.add(dest)
+
+        for dest_dir in dests:
+            task_msg = "creating folder: {}".format(dest_dir)
+            module_args = {"path": dest_dir, "recurse": True, "state": "directory"}
+
+            if parent.nsbl_env:
+                output = {"category": "nsbl_item_started", "action": "install",
+                          "item": task_msg}
+                display.display(json.dumps(output, encoding='utf-8'))
+
+            # TODO: maybe print what's going on to the user?
+            run = parent._execute_module(module_name="file", module_args=module_args, task_vars=task_vars, wrap_async=parent._task.async)
+
+            parent.add_run(run, False, False, False, task_msg)
+
+        return result
+
+    def get_supported_vars(self):
+
+        return ["attributes", "copy", "creates", "decryt", "dest", "exclude", "extra_opts", "group", "keep_newer", "list_files", "mode", "owner", "remote_src", "selevel", "serole", "setype", "seuser", "src", "unsafe_writes", "validate_certs"]
 
 class AptPkgMgr(BasePkgMgr):
     def __init__(self):
@@ -90,7 +227,7 @@ class AptPkgMgr(BasePkgMgr):
     def get_name(self):
         return "apt"
 
-    def prepare(self, package_vars, calculated_package, task_vars, result):
+    def prepare(self, package_vars, calculated_package, task_vars, result, parent):
         result = {}
         if calculated_package:
             if not isinstance(calculated_package, (list, tuple)):
@@ -172,7 +309,7 @@ class PipPkgMgr(BasePkgMgr):
     def get_name(self):
         return "pip"
 
-    def prepare(self, package_vars, calculated_package, task_vars, result):
+    def prepare(self, package_vars, calculated_package, task_vars, result, parent):
 
         result_v = {}
 
@@ -206,7 +343,7 @@ class CondaPkgMgr(BasePkgMgr):
     def get_name(self):
         return "conda"
 
-    def prepare(self, package_vars, calculated_package, task_vars, result):
+    def prepare(self, package_vars, calculated_package, task_vars, result, parent):
 
         result = {}
         if calculated_package:
@@ -245,7 +382,9 @@ SUPPORTED_PKG_MGRS = {
     'yum': YumPkgMgr,
     'pip': PipPkgMgr,
     'npm': NpmPkgMgr,
-    'vagrant_plugin': VagrantPluginPkgMgr
+    'vagrant_plugin': VagrantPluginPkgMgr,
+    'get_url': GetUrlPkgMgr,
+    'unarchive': UnarchivePkgMgr
 }
 
 DEFAULT_PKG_MGR_VARS = ["name", "state"]
@@ -253,10 +392,86 @@ USE_TOP_LEVEL_AS_PKG_NAME = False
 
 
 class ActionModule(ActionBase):
+
+
+    def add_run(self, run, pkg_id=False, pkg_vars=False, pkg_mgr=False, task_msg="executing unspecified task"):
+
+            # print("ignore: {}".format(run))
+            self.runs.append(run)
+
+            if "failed" in run.keys():
+                run_failed = run["failed"]
+            else:
+                run_failed = False
+
+            if run_failed:
+                if pkg_id:
+                    self.failed.append(pkg_id)
+                self.overall_failed = True
+
+            if "changed" in run.keys():
+                changed = run["changed"]
+            else:
+                changed = False
+
+            if "msg" in run.keys():
+                run_msg = run['msg']
+                self.msgs.append(run_msg)
+            else:
+                run_msg = None
+
+            if "module_stderr" in run.keys():
+                run_module_stderr = run['module_stderr']
+            else:
+                run_module_stderr = None
+
+            if changed:
+                self.overall_changed = True
+                if pkg_id:
+                    self.installed.append(pkg_id)
+            elif not run_failed:
+                if pkg_id:
+                    self.skipped.append(pkg_id)
+
+            if self.nsbl_env:
+                if pkg_id:
+                    output = {"item": "{} (using: {})".format(pkg_id, pkg_mgr)}
+                else:
+                    output = {"item": task_msg}
+
+                if run_msg:
+                    if run_msg == "MODULE FAILURE" and run_module_stderr:
+                        output["msg"] = run_module_stderr
+                    else:
+                        output["msg"] = run_msg
+
+                    output["action"] = "install"
+                if run_failed:
+                    output["failed"] = True
+                    output["category"] = "nsbl_item_failed"
+                else:
+                    output["category"] = "nsbl_item_ok"
+                    if changed:
+                        output["status"] = "changed"
+                    else:
+                        output["status"] = "ok"
+
+                display.display(json.dumps(output, encoding='utf-8'))
+
+
     def run(self, tmp=None, task_vars=None):
         ''' handler for template operations '''
 
         self.nsbl_env = os.environ.get("NSBL_ENVIRONMENT", False) == "true"
+
+        self.runs = []
+        self.msgs = []
+        self.overall_changed = False
+        self.overall_failed = False
+
+        self.installed = []
+        self.skipped = []
+        self.failed = []
 
         if task_vars is None:
             task_vars = dict()
@@ -409,24 +624,15 @@ class ActionModule(ActionBase):
 
         pkg_mgr_obj = SUPPORTED_PKG_MGRS.get(pkg_mgr, BasePkgMgr)()
 
-        all_pkg_vars = pkg_mgr_obj.prepare(package[VARS_KEY], calculated_package, task_vars, result)
+        all_pkg_vars = pkg_mgr_obj.prepare(package[VARS_KEY], calculated_package, task_vars, result, parent=self)
 
-        msgs = []
-        overall_changed = False
-        overall_failed = False
-
-        installed = []
-        skipped = []
-        failed = []
-
-        runs = []
         for pkg_id, pkg_vars in all_pkg_vars.items():
 
             if package[VARS_KEY].get("no_install", False):
                 skipped.append(pkg_id)
                 run = {"changed": False, "skipped": True,
                        "msg": "Package '{}' tagged with 'no_install', ignoring".format(pkg_id)}
-                runs.append(run)
+                add_run(run, pkg_id, pkg_vars)
                 continue
 
             # display.display("nsbl: installing {}".format(pkg_id))
@@ -444,7 +650,14 @@ class ActionModule(ActionBase):
                     if key in self._task.args.keys():
                         new_module_args[key] = self._task.args[key]
 
-            new_module_args.update(pkg_vars)
+            filtered_pkg_vars = {}
+            if keys:
+                for key in keys:
+                    if key in pkg_vars.keys():
+                        filtered_pkg_vars[key] = pkg_vars[key]
+
+
+            new_module_args.update(filtered_pkg_vars)
             # removing all ignore keys
             new_module_args = {k: v for k, v in new_module_args.items() if v != IGNORE_KEY}
 
@@ -460,64 +673,11 @@ class ActionModule(ActionBase):
             run = self._execute_module(module_name=pkg_mgr, module_args=new_module_args, task_vars=task_vars,
                                        wrap_async=self._task.async)
 
-            # print("ignore: {}".format(run))
-            runs.append(run)
+            self.add_run(run, pkg_id=pkg_id, pkg_vars=pkg_vars, pkg_mgr=pkg_mgr)
 
-            if "failed" in run.keys():
-                run_failed = run["failed"]
-            else:
-                run_failed = False
-
-            if run_failed:
-                failed.append(pkg_id)
-                overall_failed = True
-
-            if "changed" in run.keys():
-                changed = run["changed"]
-            else:
-                changed = False
-
-            if "msg" in run.keys():
-                run_msg = run['msg']
-                msgs.append(run_msg)
-            else:
-                run_msg = None
-
-            if "module_stderr" in run.keys():
-                run_module_stderr = run['module_stderr']
-            else:
-                run_module_stderr = None
-
-            if changed:
-                overall_changed = True
-                installed.append(pkg_id)
-            elif not run_failed:
-                skipped.append(pkg_id)
-
-            if self.nsbl_env:
-                output = {"item": "{} (using: {})".format(pkg_id, pkg_mgr)}
-                if run_msg:
-                    if run_msg == "MODULE FAILURE" and run_module_stderr:
-                        output["msg"] = run_module_stderr
-                    else:
-                        output["msg"] = run_msg
-
-                    output["action"] = "install"
-                if run_failed:
-                    output["failed"] = True
-                    output["category"] = "nsbl_item_failed"
-                else:
-                    output["category"] = "nsbl_item_ok"
-                    if changed:
-                        output["status"] = "changed"
-                    else:
-                        output["status"] = "ok"
-
-                display.display(json.dumps(output, encoding='utf-8'))
-
-        if len(runs) == 1:
-            return runs[0]
+        if len(self.runs) == 1:
+            return self.runs[0]
         else:
-            msg = "Installed: {}, Skipped: {}, Failed: {}".format(installed, skipped, failed)
-            runs_result = {"changed": overall_changed, "msg": msg, "failed": overall_failed, "runs": runs}
+            msg = "Installed: {}, Skipped: {}, Failed: {}".format(self.installed, self.skipped, self.failed)
+            runs_result = {"changed": self.overall_changed, "msg": msg, "failed": self.overall_failed, "runs": self.runs}
             return runs_result
