@@ -25,7 +25,8 @@ def update_plugins(module):
 
 
 def list_plugins(module):
-    cmd = "vagrant plugin list".format()
+
+    cmd = ["vagrant", "plugin", "list"]
     rc, stdout, stderr = module.run_command(cmd)
 
     if rc != 0:
@@ -35,6 +36,7 @@ def list_plugins(module):
 
 
 def plugin_installed(module, name, plugins_list):
+
     if name == "vagrant":
         return True
 
@@ -53,6 +55,7 @@ def check_for_missing_plugins(module, plugins, installed_plugins):
 
 
 def install_plugin(module, plugin, installed_plugins, plugin_version=None, plugin_source=None):
+
     if plugin_installed(module, plugin, installed_plugins) and not plugin_version and not plugin_source:
         module.exit_json(changed=False, msg="package(s) already installed")
 
@@ -96,6 +99,7 @@ def main():
 
     if p['name']:
         installed_plugins = list_plugins(module)
+
         plugin = p['name']
         version = p['version']
         plugin_source = p['plugin_source']

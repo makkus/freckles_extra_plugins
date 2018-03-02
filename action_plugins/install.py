@@ -48,6 +48,8 @@ def get_pkg_mgr_sudo(mgr):
         return False
     elif mgr == 'unarchive':
         return False
+    elif mgr == 'vagrant_plugin':
+        return False
     else:
         return True
 
