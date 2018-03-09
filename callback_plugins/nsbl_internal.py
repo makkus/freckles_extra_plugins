@@ -2,6 +2,7 @@ from __future__ import absolute_import, division, print_function
 
 import json
 import copy
+import yaml
 
 from ansible.playbook.task_include import TaskInclude
 from ansible.plugins.callback import CallbackBase
@@ -73,6 +74,7 @@ class CallbackModule(CallbackBase):
             task_dict["action"] = action
             task_dict["role_params"] = role_params
             # self.task_serialized = self.task.serialize()
+
 
         return self.task_serialized
 
@@ -155,6 +157,7 @@ class CallbackModule(CallbackBase):
             # if "freck_id" in p["_role_params"].keys():
 
             # return p["_role_params"]["freck_id"]
+
 
     def print_output(self, category, result, item=None):
 
@@ -248,6 +251,24 @@ class CallbackModule(CallbackBase):
 
             skipped = result._result.get('skipped', False)
             output["skipped"] = skipped
+
+            if action == "debug":
+                if result and result._result:
+                    # import pprint
+                    # pprint.pprint(self.get_task_serialized())
+                    keys_to_remove = [k for k in result._result.keys() if k.startswith("_ansible")]
+                    keys_to_remove.extend(["changed", "skipped"])
+
+                    for key in keys_to_remove:
+                        result._result.pop(key, None)
+
+                    if len(result._result) != 1:
+                        output["debug_key"] = "n/a"
+                        output["debug_value"] = "Can't be determined, multiple keys: {}".format(result._result.keys())
+
+                    output["debug_key"] = result._result.keys()[0]
+                    output["debug_value"] = result._result[output["debug_key"]]
+
 
         display.display(json.dumps(output, encoding='utf-8'))
 
