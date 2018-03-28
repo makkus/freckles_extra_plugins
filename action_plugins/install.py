@@ -640,10 +640,10 @@ class ActionModule(ActionBase):
         for pkg_id, pkg_vars in all_pkg_vars.items():
 
             if package[VARS_KEY].get("no_install", False):
-                skipped.append(pkg_id)
+                self.skipped.append(pkg_id)
                 run = {"changed": False, "skipped": True,
                        "msg": "Package '{}' tagged with 'no_install', ignoring".format(pkg_id)}
-                add_run(run, pkg_id, pkg_vars)
+                self.add_run(run, pkg_id, pkg_vars)
                 continue
 
             # display.display("nsbl: installing {}".format(pkg_id))
@@ -666,7 +666,6 @@ class ActionModule(ActionBase):
                 for key in keys:
                     if key in pkg_vars.keys():
                         filtered_pkg_vars[key] = pkg_vars[key]
-
 
             new_module_args.update(filtered_pkg_vars)
             # removing all ignore keys
