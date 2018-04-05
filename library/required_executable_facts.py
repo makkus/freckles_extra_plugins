@@ -3,8 +3,8 @@ from ansible.module_utils.basic import AnsibleModule
 
 OTHER_PATHS_TO_CHECK = [
     os.path.expanduser("~/.local/bin"),
-    os.path.expanduser("~/.local/inaugurate/bin"),
-    os.path.expanduser("~/.local/inaugurate/conda/bin")
+    os.path.expanduser("~/.local/share/inaugurate/bin"),
+    os.path.expanduser("~/.local/share/inaugurate/conda/bin"),
 ]
 
 
