@@ -1,14 +1,9 @@
 import copy
-import re
-from collections import OrderedDict
 import os
-import yaml
-from ansible import errors
+import re
+
+from freckles.freckles_defaults import DEFAULT_PACKAGE_FORMAT
 from frkl import frkl
-from nsbl.nsbl import ensure_git_repo_format
-from six import string_types
-from freckles.freckles_defaults import DEFAULT_PROFILE_VAR_FORMAT, DEFAULT_VAR_FORMAT, DEFAULT_PACKAGE_FORMAT
-from freckles.utils import render_dict
 
 
 class FilterModule(object):

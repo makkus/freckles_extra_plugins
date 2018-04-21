@@ -1,14 +1,15 @@
 from __future__ import absolute_import, division, print_function
 
-import json
-
-import os
 import copy
+import json
+import os
+
 from ansible import constants as C
 from ansible.plugins.action import ActionBase
+from requests.structures import CaseInsensitiveDict
+
 from frkl import frkl
 from nsbl.nsbl import ensure_git_repo_format
-from requests.structures import CaseInsensitiveDict
 
 __metaclass__ = type
 

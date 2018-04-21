@@ -1,8 +1,6 @@
 from __future__ import absolute_import, division, print_function
 
 import json
-import copy
-import yaml
 
 from ansible.playbook.task_include import TaskInclude
 from ansible.plugins.callback import CallbackBase
